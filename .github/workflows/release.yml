@@ -1,0 +1,43 @@
+name: release
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build -c Release --no-restore --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
+      
+    - name: Publish
+      run: dotnet publish -c Release --no-build --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
+
+    - name: Pack
+      run: dotnet pack -c Release --no-build --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
+  
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dpp.takclient
+        path: dpp.takclient/bin/*/*.nupkg
+
+    - name: Publish To Nuget
+      run: dotnet nuget push dpp.takclient/bin/Release/*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{ secrets.NUGET_SECRET_DPP_takclient }}
