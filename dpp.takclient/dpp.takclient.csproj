@@ -5,4 +5,9 @@
     <FileVersion>1.0.0.0</FileVersion>
     <Version>1.0.0</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="dpp.cot" Version="1.0.4" />
+    <PackageReference Include="NetCoreServer" Version="5.1.0" />
+  </ItemGroup>
 </Project>
