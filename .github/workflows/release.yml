@@ -7,32 +7,34 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
-      
+      uses: actions/checkout@v4
+
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 5.0.x
-        
+        dotnet-version: |
+          6.0.x
+          8.0.x
+          10.0.x
+
     - name: Restore dependencies
       run: dotnet restore
-      
+
     - name: Build
-      run: dotnet build -c Release --no-restore --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
-      
-    - name: Publish
-      run: dotnet publish -c Release --no-build --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
+      run: dotnet build -c Release --no-restore -m:1 --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
+
+    - name: Test
+      run: dotnet test -c Release --no-build --verbosity normal -m:1
 
     - name: Pack
       run: dotnet pack -c Release --no-build --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
-  
+
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: dpp.takclient
         path: dpp.takclient/bin/*/*.nupkg
