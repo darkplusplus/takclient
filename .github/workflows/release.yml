@@ -7,35 +7,47 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
-      
+      uses: actions/checkout@v4
+
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 5.0.x
-        
+        dotnet-version: |
+          6.0.x
+          8.0.x
+          10.0.x
+
     - name: Restore dependencies
       run: dotnet restore
-      
+
+    - name: Verify tag matches package version
+      shell: bash
+      run: |
+        PACKAGE_VERSION="$(grep -oPm1 '(?<=<Version>)[^<]+' dpp.takclient/dpp.takclient.csproj)"
+        TAG_VERSION="${GITHUB_REF_NAME#v}"
+        if [[ "$PACKAGE_VERSION" != "$TAG_VERSION" ]]; then
+          echo "Tag version '$TAG_VERSION' does not match package version '$PACKAGE_VERSION'."
+          exit 1
+        fi
+
     - name: Build
-      run: dotnet build -c Release --no-restore --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
-      
-    - name: Publish
-      run: dotnet publish -c Release --no-build --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
+      run: dotnet build takclient.sln -c Release --no-restore -m:1
+
+    - name: Test
+      run: dotnet test takclient.sln -c Release --no-build --verbosity normal -m:1
 
     - name: Pack
-      run: dotnet pack -c Release --no-build --version-suffix="$GITHUB_REF_NAME.$GITHUB_RUN_NUMBER"
-  
+      run: dotnet pack dpp.takclient/dpp.takclient.csproj -c Release --no-build
+
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: dpp.takclient
-        path: dpp.takclient/bin/*/*.nupkg
+        path: dpp.takclient/bin/Release/*.nupkg
 
     - name: Publish To Nuget
       run: dotnet nuget push dpp.takclient/bin/Release/*.nupkg -k $NUGET_AUTH_TOKEN -s https://api.nuget.org/v3/index.json
